@@ -40,7 +40,7 @@ def translate(content: str) -> tuple[bool, str]:
     returns a safe fallback so NodeBB can continue functioning.
     """
     
-    context = """
+    context = """/no_think
 You are helping moderate NodeBB posts.
 
 Task:
