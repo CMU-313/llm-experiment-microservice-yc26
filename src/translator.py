@@ -6,7 +6,7 @@ from ollama import Client
 # 1. Initialize the Ollama Client
 OLLAMA_URL = os.getenv("OLLAMA_HOST", "localhost:11434")
 client = Client(host=OLLAMA_URL)
-MODEL_NAME = "qwen3:0.6b"
+MODEL_NAME = "llama3.1"
 
 
 def _extract_message_content(response: Any) -> str | None:
