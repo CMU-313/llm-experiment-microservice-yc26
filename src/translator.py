@@ -43,8 +43,9 @@ You are a language detector and translator.
 Step 1: Is the post written in English? Answer Yes or No.
 Step 2: If not English, translate to English. If English, keep as-is.
 
-ENGLISH: Yes or No
-TEXT: the text in English""".strip()
+Reply in this format:
+ENGLISH: <answer>
+TEXT: <translated text>""".strip()
 
     try:
         # 2. Call the local Ollama model
