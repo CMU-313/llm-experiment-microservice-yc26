@@ -6,7 +6,7 @@ from ollama import Client
 # 1. Initialize the Ollama Client
 OLLAMA_URL = os.getenv("OLLAMA_HOST", "localhost:11434")
 client = Client(host=OLLAMA_URL)
-MODEL_NAME = "llama3.1"
+MODEL_NAME = "qwen3:0.6b"
 
 
 def _extract_message_content(response: Any) -> str | None:
@@ -88,8 +88,10 @@ Do not include anything else.
             lower = line.lower()
             if lower.startswith("english:"):
                 english_value = line.split(":", 1)[1].strip().lower()
+                english_value = english_value.replace("/think", "").strip()
             elif lower.startswith("text:"):
                 text_value = line.split(":", 1)[1].strip()
+                text_value = text_value.replace("/think", "").strip()
 
         if english_value not in {"yes", "no"}:
             return (True, content)
