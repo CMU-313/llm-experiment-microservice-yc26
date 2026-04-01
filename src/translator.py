@@ -1,12 +1,11 @@
 import os
 from typing import Any
-
 from ollama import Client
 
 # 1. Initialize the Ollama Client
 OLLAMA_URL = os.getenv("OLLAMA_HOST", "localhost:11434")
 client = Client(host=OLLAMA_URL)
-MODEL_NAME = "llama3.1"
+MODEL_NAME = "qwen3:0.6b"
 
 
 def _extract_message_content(response: Any) -> str | None:
@@ -36,29 +35,16 @@ def _extract_message_content(response: Any) -> str | None:
 def translate(content: str) -> tuple[bool, str]:
     """
     Robustly queries the model and validates that the response follows
-    the expected format. If the response is malformed or an error occurs, 
+    the expected format. If the response is malformed or an error occurs,
     returns a safe fallback so NodeBB can continue functioning.
     """
-    
     context = """/no_think
-You are helping moderate NodeBB posts.
-
-Task:
-1. Determine if the post is written in English.
-2. If it is English, return the original text unchanged.
-3. If it is not English, translate it into fluent English.
-
-Important:
-- If the post is not in English, TEXT must be the English translation, not the original text.
-- Never copy the original non-English text into TEXT unless it is already English.
-
-Return EXACTLY in this format:
+You are a language detector and translator.
+Step 1: Is the post written in English? Answer Yes or No.
+Step 2: If not English, translate to English. If English, keep as-is.
 
 ENGLISH: Yes or No
-TEXT: <text>
-
-Do not include anything else.
-""".strip()
+TEXT: the text in English""".strip()
 
     try:
         # 2. Call the local Ollama model
@@ -70,12 +56,14 @@ Do not include anything else.
             ]
         )
 
-        # 3. Robust Error Handling & Parsing (Written by your team)
+        # 3. Robust Error Handling & Parsing
         output = _extract_message_content(response)
         if output is None:
             return (True, content)
 
-        output = output.strip()
+        # Clean /think artifacts from output
+        output = output.replace("/think", "").strip()
+
         if output == "":
             return (True, content)
 
@@ -91,10 +79,20 @@ Do not include anything else.
             elif lower.startswith("text:"):
                 text_value = line.split(":", 1)[1].strip()
 
-        if english_value not in {"yes", "no"}:
-            return (True, content)
+        # Fallback: if model returned raw Yes/No + text without prefixes
+        if english_value is None and len(lines) >= 2:
+            if lines[0].strip().lower() in {"yes", "no"}:
+                english_value = lines[0].strip().lower()
+                text_value = lines[1].strip()
 
         if text_value is None or text_value.strip() == "":
+            return (True, content)
+
+        # Heuristic: if translation differs from input, it's not English
+        if english_value == "yes" and text_value.lower() != content.lower():
+            english_value = "no"
+
+        if english_value not in {"yes", "no"}:
             return (True, content)
 
         is_english = (english_value == "yes")
