@@ -163,3 +163,36 @@ def multiple_input_lines_takes_last(monkeypatch):
     is_english, translated_content = translator.translate(original_content)
     assert is_english is False
     assert translated_content == "This is a random message"
+    
+
+def test_llm_japanese_to_english_translation(monkeypatch):
+    mock_response = {"message": {"content": "ENGLISH: No\nTEXT: Hello, this is a complex sentences with a lot of terms to test accuracy of translation"}}
+    monkeypatch.setattr(translator.client, "chat", lambda **kwargs: mock_response)
+    original_content = "こんにちは, これは複雑な文です。多くの用語をテストするために、翻訳の正確性をテストします。"
+    is_english, translated_content = translator.translate(original_content)
+    assert is_english is False
+    assert translated_content == "Hello, this is a complex sentences with a lot of terms to test accuracy of translation"
+
+def test_llm_thai_to_english_translation(monkeypatch):
+    mock_response = {"message": {"content": "ENGLISH: No\nTEXT: Hello, this is a complex sentences with a lot of terms to test accuracy of translation"}}
+    monkeypatch.setattr(translator.client, "chat", lambda **kwargs: mock_response)
+    original_content = "สวัสดี, นี่คือประโยคที่ซับซ้อนมากที่สุดที่สามารถทดสอบความแม่นยำของการแปล"
+    is_english, translated_content = translator.translate(original_content)
+    assert is_english is False
+    assert translated_content == "Hello, this is a complex sentences with a lot of terms to test accuracy of translation"
+
+def test_llm_vietnamese_to_english_translation(monkeypatch):
+    mock_response = {"message": {"content": "ENGLISH: No\nTEXT: Hello, this is a complex sentences with a lot of terms to test accuracy of translation"}}
+    monkeypatch.setattr(translator.client, "chat", lambda **kwargs: mock_response)
+    original_content = "Xin chào, đây là một câu phức tạp với nhiều thuật ngữ để kiểm tra độ chính xác của bản dịch"
+    is_english, translated_content = translator.translate(original_content)
+    assert is_english is False
+    assert translated_content == "Hello, this is a complex sentences with a lot of terms to test accuracy of translation"
+
+def test_llm_korean_to_english_translation(monkeypatch):
+    mock_response = {"message": {"content": "ENGLISH: No\nTEXT: Hello, this is a complex sentences with a lot of terms to test accuracy of translation"}}
+    monkeypatch.setattr(translator.client, "chat", lambda **kwargs: mock_response)
+    original_content = "안녕하세요, 이것은 복잡한 문장입니다. 많은 용어를 테스트하기 위해 번역 정확도를 테스트합니다."
+    is_english, translated_content = translator.translate(original_content)
+    assert is_english is False
+    assert translated_content == "Hello, this is a complex sentences with a lot of terms to test accuracy of translation"
