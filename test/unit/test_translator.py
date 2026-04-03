@@ -223,3 +223,109 @@ def test_chat_raises_returns_original(monkeypatch):
     assert is_english is True
     assert translated_content == original_content
 
+def test_llm_conversational_filler(monkeypatch):
+    # The LLM adds chatty text before the actual formatted keys
+    mock_response = {
+        "message": {
+            "content": "I can help with that!\nENGLISH: No\nTEXT: I love coding"
+        }
+    }
+
+    monkeypatch.setattr(translator.client, "chat", lambda **kwargs: mock_response)
+    is_english, translated_content = translator.translate("Me encanta programar")
+
+    assert is_english is False
+    assert translated_content == "I love coding"
+
+
+def test_llm_preserves_emojis(monkeypatch):
+    # Emojis and special characters must not be lost in translation
+    mock_response = {
+        "message": {
+            "content": "ENGLISH: No\nTEXT: Hello world! 🌍✨"
+        }
+    }
+
+    monkeypatch.setattr(translator.client, "chat", lambda **kwargs: mock_response)
+    original_content = "¡Hola mundo! 🌍✨"
+    is_english, translated_content = translator.translate(original_content)
+
+    assert is_english is False
+    assert translated_content == "Hello world! 🌍✨"
+
+
+def test_llm_extra_spaces_in_response(monkeypatch):
+    # The LLM sometimes adds weird spacing around the text
+    mock_response = {
+        "message": {
+            "content": "ENGLISH: No\nTEXT:    This has extra spaces   "
+        }
+    }
+
+    monkeypatch.setattr(translator.client, "chat", lambda **kwargs: mock_response)
+    is_english, translated_content = translator.translate("Esto tiene espacios extra")
+
+    assert is_english is False
+    assert translated_content.strip() == "This has extra spaces"
+
+# Reordered Keys: LLMs sometimes print the requested fields in the wrong order
+def test_llm_reordered_keys(monkeypatch):
+    mock_response = {
+        "message": {
+            "content": "TEXT: This is a translated message\nENGLISH: No"
+        }
+    }
+
+    monkeypatch.setattr(translator.client, "chat", lambda **kwargs: mock_response)
+    is_english, translated_content = translator.translate("Este es un mensaje traducido")
+
+    assert is_english is False
+    assert translated_content == "This is a translated message"
+
+
+# Invalid Boolean Text: The LLM outputs something other than Yes/No (e.g., "Maybe" or "False")
+def test_llm_invalid_english_value_fallback(monkeypatch):
+    mock_response = {
+        "message": {
+            "content": "ENGLISH: Not Sure\nTEXT: Hello"
+        }
+    }
+
+    monkeypatch.setattr(translator.client, "chat", lambda **kwargs: mock_response)
+    original_content = "Bonjour"
+    is_english, translated_content = translator.translate(original_content)
+
+    # If the parser defaults to treating unknown values as English (True) to be safe:
+    assert is_english is True
+    assert translated_content == original_content
+
+
+# HTML/Forum Tags: Since this is for NodeBB, we need to ensure HTML/Markdown isn't stripped
+def test_llm_preserves_html_and_markdown_tags(monkeypatch):
+    mock_response = {
+        "message": {
+            "content": "ENGLISH: No\nTEXT: This is **bold** and <i>italic</i>"
+        }
+    }
+
+    monkeypatch.setattr(translator.client, "chat", lambda **kwargs: mock_response)
+    is_english, translated_content = translator.translate("Esto es **audaz** y <i>cursiva</i>")
+
+    assert is_english is False
+    assert translated_content == "This is **bold** and <i>italic</i>"
+
+
+# API Structural Failure: Ollama returns an error dictionary instead of a "message" dictionary
+def test_api_structural_failure_fallback(monkeypatch):
+    # Missing the "message" key completely, which would normally cause a KeyError
+    mock_response = {
+        "error": "model qwen3:0.6b not found, try pulling it first"
+    }
+
+    monkeypatch.setattr(translator.client, "chat", lambda **kwargs: mock_response)
+    original_content = "Test message"
+    is_english, translated_content = translator.translate(original_content)
+
+    # The try/except block should catch the KeyError and return the fallback
+    assert is_english is True
+    assert translated_content == original_content
