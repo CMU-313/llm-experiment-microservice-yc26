@@ -156,7 +156,7 @@ def test_text_line_preserves_colons(monkeypatch):
     assert translated_content == original_content
 
 
-def multiple_input_lines_takes_last(monkeypatch):
+def test_multiple_input_lines_takes_last(monkeypatch):
     mock_response = {"message": {"content": "ENGLISH: No\nTEXT: This is a non-English message\nENGLISH: Yes\nTEXT: This is a random message"}}
     monkeypatch.setattr(translator.client, "chat", lambda **kwargs: mock_response)
     original_content = "This is a non-English message\nThis is a random message"
@@ -196,3 +196,30 @@ def test_llm_korean_to_english_translation(monkeypatch):
     is_english, translated_content = translator.translate(original_content)
     assert is_english is False
     assert translated_content == "Hello, this is a complex sentences with a lot of terms to test accuracy of translation"
+
+#if there is no extractable content, None is inputted into the LLM and the original text is returned, ensuring NodeBB doesn't crash
+def test_no_response_fallback(monkeypatch):
+    monkeypatch.setattr(translator.client, "chat", lambda **kwargs: None)
+    original_content = "Bonjour"
+    is_english, translated_content = translator.translate(original_content)
+    assert is_english is True
+    assert translated_content == original_content
+
+def test_non_string_response_fallback(monkeypatch):
+    mock_response = {"message": {"content": None}}
+    monkeypatch.setattr(translator.client, "chat", lambda **kwargs: mock_response)
+    original_content = "Hello"
+    is_english, translated_content = translator.translate(original_content)
+    assert is_english is True
+    assert translated_content == original_content
+
+#mocking raising an error, and ensuring original text is returned, NodeBB doesn't crash
+def test_chat_raises_returns_original(monkeypatch):
+    def boom(**kwargs):
+        raise RuntimeError("ollama down")
+    monkeypatch.setattr(translator.client, "chat", boom)
+    original_content = "Bonjour"
+    is_english, translated_content = translator.translate(original_content)
+    assert is_english is True
+    assert translated_content == original_content
+
