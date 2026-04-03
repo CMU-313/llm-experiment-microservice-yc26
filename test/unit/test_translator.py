@@ -144,3 +144,13 @@ def test_llm_whitespace_text_returns_original_text(monkeypatch):
     is_english, translated_content = translator.translate(original_content)
     assert is_english is True
     assert translated_content == original_content
+
+
+#given that the parsing logic splits on colons, we need to test that the text line preserves colons
+def test_text_line_preserves_colons(monkeypatch):
+    mock_response = {"message": {"content": "ENGLISH: Yes\nTEXT: This is a: random colon message"}}
+    monkeypatch.setattr(translator.client, "chat", lambda **kwargs: mock_response)
+    original_content = "This is a: random colon message"
+    is_english, translated_content = translator.translate(original_content)
+    assert is_english is True
+    assert translated_content == original_content
