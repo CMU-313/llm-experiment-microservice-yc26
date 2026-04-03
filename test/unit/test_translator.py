@@ -135,3 +135,12 @@ def test_llm_english_returns_original_text(monkeypatch):
     is_english, translated_content = translator.translate(original_content)
     assert is_english is True
     assert translated_content == original_content
+
+
+def test_llm_whitespace_text_returns_original_text(monkeypatch):
+    mock_response = {"message": {"content": "ENGLISH: Yes\nTEXT:   "}}
+    monkeypatch.setattr(translator.client, "chat", lambda **kwargs: mock_response)
+    original_content = "This is a non-English message"
+    is_english, translated_content = translator.translate(original_content)
+    assert is_english is True
+    assert translated_content == original_content
