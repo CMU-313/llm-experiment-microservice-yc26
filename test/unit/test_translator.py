@@ -57,3 +57,73 @@ def test_llm_missing_text_fallback(monkeypatch):
 
     assert is_english is True
     assert translated_content == original_content
+
+def test_english_text(monkeypatch):
+    mock_response = {
+        "message": {
+            "content": "ENGLISH: Yes\nTEXT: Hello world"
+        }
+    }
+
+    monkeypatch.setattr(translator.client, "chat", lambda **kwargs: mock_response)
+    is_english, translated_content = translator.translate("Hello world")
+
+    assert is_english is True
+    assert translated_content == "Hello world"
+
+
+def test_french_text(monkeypatch):
+    mock_response = {
+        "message": {
+            "content": "ENGLISH: No\nTEXT: Good evening"
+        }
+    }
+
+    monkeypatch.setattr(translator.client, "chat", lambda **kwargs: mock_response)
+    is_english, translated_content = translator.translate("Bonsoir")
+
+    assert is_english is False
+    assert translated_content == "Good evening"
+
+
+def test_response_with_think_artifacts(monkeypatch):
+    mock_response = {
+        "message": {
+            "content": "/think I need to analyze this text\nENGLISH: No\nTEXT: Hello there"
+        }
+    }
+
+    monkeypatch.setattr(translator.client, "chat", lambda **kwargs: mock_response)
+    is_english, translated_content = translator.translate("Hola amigo")
+
+    assert is_english is False
+    assert translated_content == "Hello there"
+
+
+def test_empty_response_fallback(monkeypatch):
+    mock_response = {
+        "message": {
+            "content": ""
+        }
+    }
+
+    monkeypatch.setattr(translator.client, "chat", lambda **kwargs: mock_response)
+    original_content = "Test message"
+    is_english, translated_content = translator.translate(original_content)
+
+    assert is_english is True
+    assert translated_content == original_content
+
+
+def test_raw_yes_no_format(monkeypatch):
+    mock_response = {
+        "message": {
+            "content": "No\nThis is the translation"
+        }
+    }
+
+    monkeypatch.setattr(translator.client, "chat", lambda **kwargs: mock_response)
+    is_english, translated_content = translator.translate("Hola mundo")
+
+    assert is_english is False
+    assert translated_content == "This is the translation"
