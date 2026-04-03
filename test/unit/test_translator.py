@@ -154,3 +154,12 @@ def test_text_line_preserves_colons(monkeypatch):
     is_english, translated_content = translator.translate(original_content)
     assert is_english is True
     assert translated_content == original_content
+
+
+def multiple_input_lines_takes_last(monkeypatch):
+    mock_response = {"message": {"content": "ENGLISH: No\nTEXT: This is a non-English message\nENGLISH: Yes\nTEXT: This is a random message"}}
+    monkeypatch.setattr(translator.client, "chat", lambda **kwargs: mock_response)
+    original_content = "This is a non-English message\nThis is a random message"
+    is_english, translated_content = translator.translate(original_content)
+    assert is_english is False
+    assert translated_content == "This is a random message"
